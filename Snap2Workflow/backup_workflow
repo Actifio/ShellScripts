@@ -1,0 +1,200 @@
+#!/bin/bash
+# Actifio Copy Data Storage Scripting Team 
+# Copyright (c) 2018 Actifio Inc. All Rights Reserved
+# This script refreshes mounts
+# Version 1.0 Initial Release
+
+# Now check for inputs
+while getopts :hi:p:u:w:k:t: opt
+do
+        case "$opt"
+        in
+                h) help=y;;
+                i) ipaddress="$OPTARG";;
+                k) keyname="$OPTARG";;
+                p) policyid="$OPTARG";;
+                t) targethost="$OPTARG";;
+                u) username="$OPTARG";;
+                w) workflowid="$OPTARG";;
+        esac
+done
+ 
+# test for attempts to get help
+if [ "$1" == "-h" ] || [ "$1" == "-?" ] || [ "$1" == "-help" ] || [ "$1" == "--help" ] 
+then
+echo "
+***************************************************************************************************
+This script is intended for the following scenario:
+ 
+We need to run a snapshot against an App and then immediately run a worklow to mount that snapshot
+ 
+When run this script will:
+
+1)  Check no job is running
+2)  Start a new snapshot job and monitor it
+3)  Confirm the snapshot was created
+4)  Run the workflow for that app
+ 
+The script will have several variables which must be set at script run time:
+ 
+-i <ip addr>   To specify the Appliance to execute commands against (this could also be a host name) 
+-p <policy ID> To specify policy ID
+-t <targethost> To specify the hostname of the target host for the workflow (optional)
+-u <username>  To specify the user name to run commands against
+-w <workflowID> To specify workflow ID
+ 
+An example of the complete syntax is as follows.
+
+backupworkflow -i 10.10.10.10 -p 5678 -u admin -w 91011 -t host1
+
+***************************************************************************************************"
+exit 0
+fi
+
+logfile=~/workflowcronlog.txt
+
+# If we don't have an ipaddress  we will complain   Dont test for numeric in case they use names
+if [ -z "$ipaddress" ];then
+	echo "Please use a valid IP address with:   -i <ipaddress>" 
+	echo "For instance for ipaddress 1.2.3.4:   -i 1.2.3.4"
+	exit 0
+fi
+
+# If we dont have a username we will complain
+if [ -z "$username" ]; then
+	echo "Please specify a username with:     -u <username>"
+	echo "For instance for username george:   -u george"
+	exit 0
+fi
+
+# If we didn't get a policyid, then complain
+if [ -z "$policyid" ] || [ -n "`echo $policyid | sed 's/[0-9]//g'`" ]; then
+	echo "Please specify a numerical policyid with:   -p <policyid>"
+	echo "Learn policy ID with reportpolicies -a 1234"
+	exit 0
+fi
+
+# If we didn't get a workflow, then complain
+if [ -z "$workflowid" ] || [ -n "`echo $workflowid | sed 's/[0-9]//g'`" ]; then
+	echo "Please specify a numerical workflowid with:   -w <workflowid>"
+	echo "Learn workflow ID with reportworkflows"
+	exit 0
+fi
+
+
+currenttime=$(date)
+echo "-------------------------------------------" >> $logfile
+echo "Starting workflow run at $currenttime" >> $logfile
+echo ""
+
+# first learn the appid
+appnum=$(ssh $username@$ipaddress "udsinfo lsworkflow -delim } $workflowid" 2>$1 | awk -F"}" '$1=="appid" { print $2 }')
+if [ -z "$appnum" ] || [ -n "`echo $appnum | sed 's/[0-9]//g'`" ]; then
+	echo "Failed to learn appid from workflow ID." >> $logfile
+	exit 0
+fi
+	
+# time to start a backup for our appid.   First check there is no job running
+interval=0
+runningjob=y
+while [ "$runningjob" == "y" ]; do
+echo "Checking for a running job with this command:   udsinfo lsjob -filtervalue jobclass=snapshot\&appid=$appnum" >> $logfile
+runningjobcheck=$(ssh $username@$ipaddress "udsinfo lsjob -filtervalue jobclass=snapshot\&appid=$appnum -delim } -nohdr" 2>$1)
+if [ -n "$runningjobcheck" ]; then
+	interval=$[$interval+1]
+	echo "Snapshot $(echo "$runningjobcheck" | awk -F"}" '{ print $5 }') is running for that app.  This was check $interval of 120. Sleeping 55 seconds" >> $logfile
+	if [ $interval -gt 120 ]; then
+	  echo "We have tried over over two hours.  Giving up" >> $logfile
+	  exit 0
+	fi
+	sleep 55
+else
+	echo "No running job found, continuing" >> $logfile
+	runningjob=n
+fi
+done
+
+#  we need a unique label so we can find the image we create, so we use the date
+label=$(date "+%Y%m%d%H%M%S") 
+echo "Creating an image with unique label $label" >> $logfile
+
+#  now we run the backup
+
+echo "We are now going to run this command:  udstask backup -app $appnum -policy $policyid -backuptype db -label $label" >> $logfile
+
+newimage=$(ssh $username@$ipaddress "udstask backup -app $appnum -policy $policyid -backuptype db -queue -label $label" 2>&1)
+backupjob=$(echo "$newimage" | cut -d" " -f1)
+if [ "$(echo "$backupjob" | cut -c 1-3)" != "Job" ]; then
+	echo "It looks like the job failed with:  $newimage" >> $logfile
+	exit 0
+else
+	echo "The following job has started: $backupjob" >> $logfile
+fi
+ 
+#  Now monitor the running job
+while true; do
+	jobcheck=$(ssh $username@$ipaddress "udsinfo lsjob -delim } $backupjob"  2> /dev/null)
+	if [ -z "$jobcheck" ]; then
+		history=$(ssh $username@$ipaddress udsinfo lsjobhistory -delim } $backupjob)
+		status=$(echo "$history" | awk -F"}" '$1=="status" { print $2 }')
+		duration=$(echo "$history" | awk -F"}" '$1=="duration" { print $2 }')
+		if [ "$status" == "succeeded" ]; then
+			echo "Backup Job Results:" >> $logfile
+			echo "Status:                     $status" >> $logfile
+			echo "Duration:                   $duration" >> $logfile
+		else
+			echo "An error occurred while while running snapshot $backupjob" >> $logfile
+			echo -n "The message for this failed job was: " >> $logfile
+			ssh $username@$ipaddress udsinfo lsjobhistory -delim } $backupjob | awk -F"}" '$1=="message" { print $2 }'
+			exit 0
+		fi
+		break
+	else
+		data=$(echo "$jobcheck" | awk -F"}" '$1=="progress" { print $2 }')
+ 		echo "$backupjob progress:       $data%" >> $logfile
+		sleep 30
+	fi
+done
+
+# is there an image to mount?
+echo "Now looking for a new image using this command: udsinfo lsbackup -filtervalue label=$label"
+newimageid=$(ssh $username@$ipaddress "udsinfo lsbackup -filtervalue label=$label -nohdr -delim } 2>&1 | tail -1 | cut -d} -f19")
+if [ -z $newimageid ] ; then
+	echo "Failed to find an image with the matching label so there is nothing to mount" >> $logfile
+	exit 0
+else
+	echo "Found matching image with name $newimageid" >> $logfile
+fi
+
+# now we look for competing mount or unmount job running on target host
+if [ -n $targethost ]; then
+	interval=0
+	runningjob=y
+	while [ "$runningjob" == "y" ]; do
+		echo "Checking for a running job to the target host: $targethost" >> $logfile
+		mountcheck=$(ssh $username@$ipaddress "udsinfo lsjob -delim } -nohdr" 2>&1 | awk -F"}" '{ print $26 }') 
+		if [ -n "$(echo "$mountcheck" | grep $targethost)" ]; then
+			interval=$[$interval+1]
+			echo "Job is running on the target host.  This was check $interval of 120. Sleeping 55 seconds" >> $logfile
+			if [ $interval -gt 120 ]; then
+	  		echo "We have tried over over two hours.  Giving up" >> $logfile
+	  		exit 0
+			fi
+			sleep 55
+		else
+			echo "No running job found targetng $targethost, continuing" >> $logfile
+			runningjob=n
+		fi
+	done
+fi
+
+# Now run the workflow
+echo "We are now going to enable, run and then disable the workflow" >> $logfile
+echo "First we enable the workflow" >> $logfile
+ssh $username@$ipaddress "udstask chworkflow -disable false $workflowid" 2>&1
+echo "Now we run the workflow" >> $logfile
+ssh $username@$ipaddress "udstask runworkflow $workflowid" 2>&1
+echo "Now we disable the workflow" >> $logfile
+ssh $username@$ipaddress "udstask chworkflow -disable true $workflowid" 2>&1
+echo "If this is the first time the workflow was run you will get a mount, otherwise you will get a reprovision" >> $logfile
+echo "-------------------------------------------" >> $logfile
