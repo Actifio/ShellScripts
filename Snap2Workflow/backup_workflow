@@ -5,13 +5,12 @@
 # Version 1.0 Initial Release
 
 # Now check for inputs
-while getopts :hi:p:u:w:k:t: opt
+while getopts :hi:p:u:w:t: opt
 do
         case "$opt"
         in
                 h) help=y;;
                 i) ipaddress="$OPTARG";;
-                k) keyname="$OPTARG";;
                 p) policyid="$OPTARG";;
                 t) targethost="$OPTARG";;
                 u) username="$OPTARG";;
@@ -51,7 +50,12 @@ backupworkflow -i 10.10.10.10 -p 5678 -u admin -w 91011 -t host1
 exit 0
 fi
 
+# define log file location
 logfile=~/workflowcronlog.txt
+
+# rotate log file for previous run so we keep only two logfiles total
+[[ -f $logfile ]] && mv $logfile $logfile.old
+
 
 # If we don't have an ipaddress  we will complain   Dont test for numeric in case they use names
 if [ -z "$ipaddress" ];then
