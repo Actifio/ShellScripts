@@ -10,7 +10,7 @@ actifoip=10.11.1.1
 username=admin
 appid=4855
 
-# this rotates the log file.   We keep only the current and previous.  Otherwise we keep growing the one file
+# this rotates the log file.   We keep only the current and previous.  Hash this line out if you want to keep growing the one file
 [[ -f "$logfile" ]] && mv $logfile $logfile.old
 
 # If we don't have an actifoip  we will complain 
