@@ -21,7 +21,7 @@ logfile=~/logcheck.txt
 timeout=120
 
 # this rotates the log file.   We keep only the current and previous.  Hash this line out if you want to keep growing the one file
-# [[ -f "$logfile" ]] && mv $logfile $logfile.old
+[[ -f "$logfile" ]] && mv $logfile $logfile.old
 
 # If we don't have an actifo ip  we will complain 
 if [ -z "$actifoip" ];then
