@@ -28,3 +28,19 @@ If you do not get a policy listing you need to get this command working.
 ## Run the script
 
 You can now run the script and monitor using the log file. 
+```
+2018-07-19 10:36:07  Starting run
+2018-07-19 10:36:12  Appid 185535 was found for smalldb
+2018-07-19 10:36:16  Snapshot Policy ID 7085 was found for smalldb
+2018-07-19 10:36:16  Checking for a running snapshot job for smalldb
+2018-07-19 10:36:20  No running job found for Appname smalldb, we will need to start one
+2018-07-19 10:36:24  Started this job: Job_6717659
+2018-07-19 10:36:24  Loop check to monitor snapshot Job_6717659 is still running
+2018-07-19 10:36:28  Job_6717659 is still running.  This was check 1 of 120. Sleeping 55 seconds
+2018-07-19 10:37:27  Job_6717659 is still running.  This was check 2 of 120. Sleeping 55 seconds
+2018-07-19 10:38:26  Job_6717659 is still running.  This was check 3 of 120. Sleeping 55 seconds
+2018-07-19 10:39:25  Job_6717659 is still running.  This was check 4 of 120. Sleeping 55 seconds
+2018-07-19 10:40:24  Job_6717659 is no longer running
+2018-07-19 10:40:32  Logs found till this date:  2018-07-18 20:29:18
+2018-07-19 10:40:32   ############################### FINISHED ######################
+```
