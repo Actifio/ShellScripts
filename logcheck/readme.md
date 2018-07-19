@@ -41,6 +41,6 @@ You can now run the script and monitor using the log file.
 2018-07-19 10:38:26  Job_6717659 is still running.  This was check 3 of 120. Sleeping 55 seconds
 2018-07-19 10:39:25  Job_6717659 is still running.  This was check 4 of 120. Sleeping 55 seconds
 2018-07-19 10:40:24  Job_6717659 is no longer running
-2018-07-19 10:40:32  Logs found till this date:  2018-07-18 20:29:18
+2018-07-19 10:40:32  Database Logs for smalldb found till this date:  2018-07-18 20:29:18
 2018-07-19 10:40:32   ############################### FINISHED ######################
 ```
