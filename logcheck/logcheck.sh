@@ -115,5 +115,5 @@ done
 # now we learn the most recent log backup date
 lastsnap=$(ssh $username@$actifoip "udsinfo lsbackup -filtervalue appid=$appid\&jobclass=snapshot -delim , -nohdr" | awk -F"," 'END{ print $1 }')
 lasthostlog=$(ssh $username@$actifoip "udsinfo lsbackup -delim , $lastsnap" | awk -F"," '$1=="  hostendpit" { print $2 }')
-echo "`date "+%F %T"`  Logs found till this date:  $lasthostlog" >> $logfile
+echo "`date "+%F %T"`  Database Logs for $appname found till this date:  $lasthostlog" >> $logfile
 echo "`date "+%F %T"`   ############################### FINISHED ######################" >> $logfile
