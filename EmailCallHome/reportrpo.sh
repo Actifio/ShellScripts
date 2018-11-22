@@ -57,7 +57,7 @@ if [ -z "$clusterlist" ]; then
 fi
 
 # start the report output
-echo "Report from Actifio Report Manager created on ${currentdate}" > $reportname
+echo "Report from Actifio Report Generator created on ${currentdate}" > $reportname
 echo "##################################################################################################################################################" >> $reportname
 # work the list
 echo "$clusterlist" | while IFS="}" read -ra cluster; do
