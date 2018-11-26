@@ -47,6 +47,7 @@ actifio2}10.10.10.11"
 ################################################################################################
 
 #count the appliances
+cleancount=0
 clustercount=$(echo "$clusterlist" | wc -l)
 
 # fetch the current date time
