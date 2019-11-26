@@ -50,7 +50,7 @@ ssh $applianceuser@$applianceip "udstask mountimage -appid $oraclesourceapp -hos
 
 # bring up SQL DB
 echo "Starting SQL DB"
-ssh $applianceuser@$applianceip "udstask mountimage -appid $sqlsourceapp -host $sqltargehost -label $grouplabel -recoverytime \"$recoverytime\"  -restoreoption 'provisioningoptions=<provisioning-options><sqlinstance>$sqlinstance</sqlinstance><dbname>$sqldbname</dbname><username>au\sqladmin</username><password type=\"encrypt\">12!pass345</password><recover>true</recover></provisioning-options>' -nowait"
+ssh $applianceuser@$applianceip "udstask mountimage -appid $sqlsourceapp -host $sqltargehost -label $grouplabel -recoverytime \"$recoverytime\"  -restoreoption 'provisioningoptions=<provisioning-options><sqlinstance>$sqlinstance</sqlinstance><dbname>$sqldbname</dbname><username>au\sqladmin</username><password type=\"encrypt\">passw0rd</password><recover>true</recover></provisioning-options>' -nowait"
 
 while true; do
 	jobcheck=$(ssh $applianceuser@$applianceip "reportrunningjobs -j mount -c -n" | egrep "$sqltargehost|$")
