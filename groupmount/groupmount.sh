@@ -18,6 +18,21 @@ recoverytime="2019-11-26 18:30:00"
 applianceuser=av
 applianceip=10.65.5.35
 
+# checking for log window
+rpocheck=$(ssh $applianceuser@$applianceip "reportrpo -n -c -a $sqlsourceapp")
+snapdate=$(echo $rpocheck | cut -d, -f10)
+logdate=$(echo $rpocheck | cut -d, -f9)
+[[ "$snapdate" > "$recoverytime" ]] && echo "Most recent Snap date for $sqlsourceapp is after recovery time" && exit 0
+[[ "$logdate" < "$recoverytime" ]] && echo "Lastest Log date for $sqlsourceapp is before recovery time" && exit 0
+echo "SQL App most recent snap is $snapdate and log date is $logdate which works with requested $recoverytime"
+
+rpocheck=$(ssh $applianceuser@$applianceip "reportrpo -n -c -a $oraclesourceapp")
+snapdate=$(echo $rpocheck | cut -d, -f10)
+logdate=$(echo $rpocheck | cut -d, -f9)
+[[ "$snapdate" > "$recoverytime" ]] && echo "Most recent Snap date for $oraclesourceapp is after recovery time" && exit 0
+[[ "$logdate" < "$recoverytime" ]] && echo "Lastest Log date for $oraclesourceapp is before recovery time" && exit 0
+echo "Oracle App most recent snap is $snapdate and log date is $logdate which works with requested $recoverytime"
+
 echo "checking for mounts using label $grouplabel"
 #check for mounts
 mountcheck=$(ssh $applianceuser@$applianceip "udsinfo lsbackup -delim , -nohdr -filtervalue label=$grouplabel")
