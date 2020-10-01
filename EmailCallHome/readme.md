@@ -104,7 +104,11 @@ sendmail: warning: inet_protocols: configuring for IPv4 support only
 postdrop: warning: inet_protocols: IPv6 support is disabled: Address family not supported by protocol
 postdrop: warning: inet_protocols: configuring for IPv4 support only
  ```
-To disable the messsage, go to /etc/postfix/main.cf and change from:
+You may also get this:
+```
+fatal: parameter inet_interfaces: no local interface found for ::1
+```
+To resolve either, go to /etc/postfix/main.cf and change from:
  ```
 inet_protocols = all
 ```
@@ -113,10 +117,14 @@ to:
 inet_protocols = ipv4
 ```
 
-Then issue:   
+Then for RHEL/Centos 6 and below:
 ```
 postfix reload
-``` 
+```
+Then for RHEL/Centos 7 and below:
+```
+ systemctl status postfix.service
+ ```
 ## Trouble shooting - no mail arrives
  
 If no mail arrives, check   /var/log/maillog
@@ -138,7 +146,11 @@ Then set one to your mail host, for instance:
 ```
 relayhost = smtp.acme.co
  ```
-Then:   
+Then for RHEL/Centos 6 and below:
 ```
 postfix reload
 ```
+Then for RHEL/Centos 7 and below:
+```
+ systemctl status postfix.service
+ ```
